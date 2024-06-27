@@ -30,7 +30,7 @@ class DQNLearning:
             # 每次更新数据后,训练N次
             for i in range(200):
                 # 采样N条数据
-                idx, state, action, reward, next_state, over = pool.sample()
+                idx, state, action, reward, next_state, over = self.pool.sample()
                 # 计算value
                 value = self.model(state).gather(dim=1, index=action)
 
@@ -41,7 +41,7 @@ class DQNLearning:
                 target = target * 0.99 * (1 - over) + reward
 
                 # 根据概率缩放loss
-                r = torch.FloatTensor([pool.prob[i] for i in idx])
+                r = torch.FloatTensor([self.pool.prob[i] for i in idx])
                 r = (1 - r).clamp(0.1, 1.0).reshape(-1, 1)
 
                 loss = loss_fn(value, target)
@@ -51,7 +51,7 @@ class DQNLearning:
 
                 # 根据loss调整数据权重
                 for i, j in zip(idx.tolist(), loss.abs().sigmoid().flatten().tolist()):
-                    pool.prob[i] = j
+                    self.pool.prob[i] = j
 
             # 复制参数
             if (epoch + 1) % 5 == 0:
@@ -59,11 +59,11 @@ class DQNLearning:
 
             if epoch % 100 == 0:
                 test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
-                print(epoch, len(pool), test_result)
+                print(epoch, len(self.pool), test_result)
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         dqnModel = DQNModel()
         # dqnModel.loadModel()
 

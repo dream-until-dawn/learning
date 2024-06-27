@@ -30,7 +30,7 @@ class DQNLearning:
             for i in range(200):
 
                 # 采样N条数据
-                state, action, reward, next_state, over = pool.sample()
+                state, action, reward, next_state, over = self.pool.sample()
 
                 # 计算value
                 value = self.model(state).gather(dim=1, index=action)
@@ -53,8 +53,8 @@ class DQNLearning:
             if epoch % 100 == 0:
                 self.model.eval()
                 test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
-                model.train()
-                print(epoch, len(pool), test_result)
+                self.model.train()
+                print(epoch, len(self.pool), test_result)
 
                 weight = self.model.weight_mean + 1 * self.model.weight_std
                 bias = self.model.bias_mean + 1 * self.model.bias_std
@@ -68,7 +68,7 @@ class DQNLearning:
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         model = DQNModel()
         model_delay = DQNModel()
         model_delay.load_state_dict(model.state_dict())
@@ -84,5 +84,5 @@ if __name__ == "__main__":
         dqnModel = DQNModel(mode="eval")
         dqnModel.loadModel()
 
-        player = Player(dqnModel.model)
+        player = Player(dqnModel)
         player.play(show=True)
