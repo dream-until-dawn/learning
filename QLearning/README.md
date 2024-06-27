@@ -1,3 +1,5 @@
+# Q-Learning Q 函数-学习最优动作
+
 > 1、Q(St,At) = 0
 
 > 2、Rt,St+1 = setp(St,At)

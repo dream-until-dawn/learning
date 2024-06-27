@@ -20,6 +20,7 @@ class DQNModel:
             torch.nn.ReLU(),
             torch.nn.Linear(64, 2),
         )
+        # 延迟更新的模型,用于计算target
         model_delay = torch.nn.Sequential(
             torch.nn.Linear(4, 64),
             torch.nn.ReLU(),
