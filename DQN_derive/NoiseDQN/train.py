@@ -23,7 +23,7 @@ class DQNLearning:
         loss_fn = torch.nn.MSELoss()
 
         # 共更新N轮数据
-        for epoch in range(500):
+        for epoch in range(300):
             self.pool.update()
 
             # 每次更新数据后,训练N次

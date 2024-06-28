@@ -55,7 +55,7 @@ class DQNModel:
             self.model.load_state_dict(
                 torch.load(f"{self.model_dir}/{self.modelName}.pth")
             )
-            print("模型加载成功!")
+            print(f"{self.modelName}---模型加载成功!")
             self.checkModel()
         else:
             exit("model no exists.")

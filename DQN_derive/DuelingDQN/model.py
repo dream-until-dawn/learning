@@ -15,7 +15,7 @@ class DQNModel(torch.nn.Module):
         self.fc_action = torch.nn.Linear(64, 2)
         self.fc_state = torch.nn.Linear(64, 1)
 
-        self.modelName = "DQN"
+        self.modelName = "DuelingDQN"
         self.model_dir = "save_model"
         self.create_model_dir()
         self.setModel(mode)
@@ -42,16 +42,16 @@ class DQNModel(torch.nn.Module):
 
     def saveModel(self, model: nn.Sequential = None) -> None:
         if model is None:
-            torch.save(self.fc.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
+            torch.save(self.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
         else:
             torch.save(model.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
 
     def loadModel(self) -> None:
         if os.path.exists(f"{self.model_dir}/{self.modelName}.pth"):
-            self.fc.load_state_dict(
+            self.load_state_dict(
                 torch.load(f"{self.model_dir}/{self.modelName}.pth")
             )
-            print("模型加载成功!")
+            print(f"{self.modelName}---模型加载成功!")
             self.checkModel()
         else:
             exit("model no exists.")
@@ -71,5 +71,6 @@ class DQNModel(torch.nn.Module):
 
 if __name__ == "__main__":
     model = DQNModel()
+    model.loadModel()
     model_delay = DQNModel()
     model_delay.load_state_dict(model.state_dict())

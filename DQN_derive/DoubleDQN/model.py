@@ -6,7 +6,7 @@ import torch.nn as nn
 class DQNModel:
 
     def __init__(self, mode="train"):
-        self.modelName = "DQN"
+        self.modelName = "DoubleDQN"
         self.model_dir = "save_model"
         self.create_model_dir()
         self.model, self.model_delay = self.getModel(mode)
@@ -69,7 +69,7 @@ class DQNModel:
                 torch.load(f"{self.model_dir}/{self.modelName}.pth")
             )
             self.model_delay.load_state_dict(self.model.state_dict())
-            print("模型加载成功!")
+            print(f"{self.modelName}---模型加载成功!")
             self.checkModel()
         else:
             exit("model no exists.")

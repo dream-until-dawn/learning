@@ -1,13 +1,15 @@
+from env import MyWrapper
+from player import Player
 from player import Pool
 
 
 class QLearning:
-    def __init__(self):
-        self.pool = Pool()
+    def __init__(self, pool: Pool):
+        self.pool = pool
 
     def train(self):
         # 共更新N轮数据
-        for epoch in range(1000):
+        for epoch in range(500):
             self.pool.update()
 
             # 每次更新数据后,训练N次
@@ -34,10 +36,13 @@ class QLearning:
 
             if epoch % 100 == 0:
                 print(epoch, len(self.pool), self.pool.player.play()[-1])
-                print(self.pool.player.Q)
+                # print(self.pool.player.Q)
 
 
 if __name__ == "__main__":
-    qLearning = QLearning()
+    env = MyWrapper()
+    player = Player(env)
+    pool = Pool(player)
+    qLearning = QLearning(pool)
     qLearning.train()
     # qLearning.pool.player.play(show=True)

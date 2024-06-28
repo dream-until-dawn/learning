@@ -19,7 +19,7 @@ class DQNModel(torch.nn.Module):
         self.bias_mean = torch.nn.Parameter(torch.randn(2))
         self.bias_std = torch.nn.Parameter(torch.randn(2))
 
-        self.modelName = "DQN"
+        self.modelName = "NoiseDQN"
         self.model_dir = "save_model"
         self.create_model_dir()
         self.setModel(mode)
@@ -46,16 +46,14 @@ class DQNModel(torch.nn.Module):
 
     def saveModel(self, model: nn.Sequential = None) -> None:
         if model is None:
-            torch.save(self.fc.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
+            torch.save(self.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
         else:
             torch.save(model.state_dict(), f"{self.model_dir}/{self.modelName}.pth")
 
     def loadModel(self) -> None:
         if os.path.exists(f"{self.model_dir}/{self.modelName}.pth"):
-            self.fc.load_state_dict(
-                torch.load(f"{self.model_dir}/{self.modelName}.pth")
-            )
-            print("模型加载成功!")
+            self.load_state_dict(torch.load(f"{self.model_dir}/{self.modelName}.pth"))
+            print(f"{self.modelName}---模型加载成功!")
             self.checkModel()
         else:
             exit("model no exists.")

@@ -82,9 +82,8 @@ class Pool:
 
 if __name__ == "__main__":
     dqnModel = DQNModel()
-    model = dqnModel.model
 
-    player = Player(model)
+    player = Player(dqnModel)
 
     pool = Pool(player)
     data, reward_sum = player.play()
