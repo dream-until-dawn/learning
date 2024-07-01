@@ -32,8 +32,8 @@ class Player:
 
             s = ns
             state.append(s)
-            action.append(a.detach().numpy()[0])
-            reward.append(r.detach().numpy()[0])
+            action.append(a.cpu().detach().numpy()[0])
+            reward.append(r.cpu().detach().numpy()[0])
             next_state.append(ns)
             over.append(o)
         state = torch.FloatTensor(np.array(state)).reshape(-1, 88).to(self.device)

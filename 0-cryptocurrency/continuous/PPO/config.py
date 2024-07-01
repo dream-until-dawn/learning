@@ -41,7 +41,7 @@ discount_factor = 0.9
 # 训练批次次数(Training Epochs)
 training_epochs = 10
 # 训练总次数(Total Training Epochs)
-total_training_epochs = 100
+total_training_epochs = 1000
 # 每个Epoch的最小步数(Minimum Steps per Epoch)
 min_steps_per_epoch = 1000
 # 测试频率(Test Frequency)
