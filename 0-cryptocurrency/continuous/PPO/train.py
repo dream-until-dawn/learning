@@ -1,5 +1,8 @@
+import time
+
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter
 
 from model import LearningModel, PPOModel
 from player import Player
@@ -23,6 +26,8 @@ class PPOLearning:
             model_value.parameters(), lr=config.learning_rate_value
         )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.writer = SummaryWriter(log_dir=f"{config.log_dir}/{time.strftime('%Y-%m-%d-%H-%M')}")
+        self.step = 0
 
     def requires_grad(self, model: nn.Sequential, value: bool) -> None:
         for param in model.parameters():
@@ -43,6 +48,7 @@ class PPOLearning:
             value = self.model_value(state)
 
             loss = torch.nn.functional.mse_loss(value, target)
+            self.writer.add_scalar("Value Loss", loss.item(), self.step)  # 记录损失值
             loss.backward()
             self.optimizer_value.step()
             self.optimizer_value.zero_grad()
@@ -80,6 +86,7 @@ class PPOLearning:
             surr2 = ratio.clamp(0.8, 1.2) * delta
 
             loss = -torch.min(surr1, surr2).mean()
+            self.writer.add_scalar("Policy Loss", loss.item(), self.step)  # 记录损失值
 
             # 更新参数
             loss.backward()
@@ -93,32 +100,38 @@ class PPOLearning:
         for epoch in range(config.total_training_epochs):
             # 一个epoch最少玩N步
             steps = 0
-            while steps < 200:
+            while steps < config.min_steps_per_epoch:
                 state, _, reward, next_state, over, _ = self.player.play()
                 steps += len(state)
 
                 # 训练两个模型
                 delta = self.train_value(state, reward, next_state, over)
                 loss = self.train_action(state, delta)
+                self.step += 1
 
-            if epoch % 10 == 0:
+            if epoch % config.test_frequency == 0:
                 test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
                 print(epoch, loss, test_result)
+                self.writer.add_scalar(
+                    "Test Result", test_result, epoch
+                )  # 记录测试结果
 
 
 if __name__ == "__main__":
     if True:
         dqnModel = LearningModel()
+        dqnModel.loadModel()
 
         player = Player(dqnModel.model_action)
 
-        dqnLearning = PPOLearning(
+        ppoLearning = PPOLearning(
             dqnModel.model_action,
             dqnModel.model_value,
             player,
         )
-        dqnLearning.train()
-        dqnModel.saveModel(dqnLearning.model_action, dqnLearning.model_value)
+        ppoLearning.train()
+        ppoLearning.writer.close()
+        dqnModel.saveModel(ppoLearning.model_action, ppoLearning.model_value)
     else:
         dqnModel = LearningModel(mode="eval")
         dqnModel.loadModel()

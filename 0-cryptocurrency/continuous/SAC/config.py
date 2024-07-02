@@ -27,21 +27,20 @@ TECHNICAL_INDICATORS_LIST = [
 ]
 
 # 模型名称
-modelName = "cryptocurrency-PPO"
+modelName = "cryptocurrency-SAC"
 # 模型保存路径
 model_dir = "model"
 # 日志保存路径
-log_dir = "train_log/PPO"
+log_dir = "train_log/SAC"
 # 输入集大小
 prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 1) * 4
 # ####### 策略参数 #######
 # 学习率(Learning Rate)
-learning_rate_action = 5e-4
-learning_rate_value = 5e-3
+learning_rate_action = 2e-4
+learning_rate_value1 = 2e-3
+learning_rate_value2 = 2e-3
 # 折扣因子(Discount Factor)
-discount_factor = 0.9
-# 训练批次次数(Training Epochs)
-training_epochs = 10
+discount_factor = 0.995
 # 训练总次数(Total Training Epochs)
 total_training_epochs = 1000
 # 每个Epoch的最小步数(Minimum Steps per Epoch)
