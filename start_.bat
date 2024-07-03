@@ -1,2 +1,1 @@
-C:/Users/mj/.pyenv/pyenv-win/versions/3.9.13/python.exe DQN\train.py
-pause
+C:/Users/mj/.pyenv/pyenv-win/versions/3.9.13/python.exe 0-cryptocurrency\continuous\SAC\train.py >> start_output.txt 

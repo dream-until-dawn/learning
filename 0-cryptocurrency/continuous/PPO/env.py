@@ -63,6 +63,7 @@ class MyWrapper(gym.Wrapper):
         # 是否已结束
         if self.data_index > self.ending_point:
             over = True
+        # print(f"action: {action}")
         # 反转动作
         reverse_action = 1 - action
         # 下一状态幅度

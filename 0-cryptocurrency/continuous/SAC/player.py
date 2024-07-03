@@ -2,10 +2,12 @@ import random
 
 import torch
 import torch.nn as nn
+from torch.distributions import Normal
 import numpy as np
 
 from env import MyWrapper
 from model import SACModel
+
 import config
 
 
@@ -23,11 +25,18 @@ class Player:
         state = self.env.reset()
         over = False
         while not over:
+            # 根据概率采样
             s_tensor = (
                 torch.FloatTensor(state).reshape(1, config.prev_dim).to(self.device)
             )
-            prob = self.model_action(s_tensor)[0].tolist()
-            action = random.choices(range(1), weights=prob, k=1)[0]
+            mu, sigma = self.model_action(s_tensor)
+            mu_value = mu.item()
+            sigma_value = sigma.item()
+            # 创建正态分布
+            normal_dist = Normal(mu_value, sigma_value)
+            # 生成服从正态分布的随机数，并截断在0到1之间
+            action = normal_dist.sample().clamp(0, 1).item()
+            # print(f"action\t{action}")
 
             next_state, reward, over, _ = self.env.step(action)
 
@@ -55,17 +64,12 @@ class Pool:
 
     # 更新动作池
     def update(self):
-        # 每次更新不少于N条新数据
-        old_len = len(self.pool)
-        while len(self.pool) - old_len < 200:
-            self.pool.extend(self.player.play()[0])
-
-        # 只保留最新的N条数据
-        self.pool = self.pool[-2_0000:]
+        self.pool = self.player.play()[0]
 
     # 获取一批数据样本
     def sample(self):
-        data = random.sample(self.pool, 512)
+        # data = random.sample(self.pool, 512)
+        data = self.pool
 
         state = (
             torch.FloatTensor(np.array([i[0] for i in data]))
@@ -73,7 +77,7 @@ class Pool:
             .to(self.device)
         )
         action = (
-            torch.LongTensor(np.array([i[1] for i in data]))
+            torch.FloatTensor(np.array([i[1] for i in data]))
             .reshape(-1, 1)
             .to(self.device)
         )
@@ -99,7 +103,9 @@ class Pool:
 if __name__ == "__main__":
     sacModel = SACModel()
 
-    player = Player(sacModel.model_action)
+    model_action = sacModel.model_action
+
+    player = Player(model_action)
     pool = Pool(player)
 
     pool.update()

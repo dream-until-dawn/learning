@@ -6,22 +6,31 @@ import config
 
 
 # 定义模型
-class PPOModel(nn.Module):
+class PPOModel(torch.nn.Module):
+
     def __init__(self):
-        super(PPOModel, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
-            nn.Sigmoid(),
+        super().__init__()
+        self.s = torch.nn.Sequential(
+            torch.nn.Linear(config.prev_dim, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+        )
+        self.mu = torch.nn.Sequential(
+            torch.nn.Linear(64, 1),
+            torch.nn.Sigmoid(),
+        )
+        self.sigma = torch.nn.Sequential(
+            torch.nn.Linear(64, 1),
+            torch.nn.Sigmoid(),
         )
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, state):
+        state = self.s(state)
+
+        return self.mu(state), self.sigma(state).exp()
 
 
 class LearningModel:
@@ -36,14 +45,14 @@ class LearningModel:
         # 演员模型,计算每个动作的概率
         model_action = PPOModel()
 
-        model_value = nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
+        model_value = torch.nn.Sequential(
+            torch.nn.Linear(config.prev_dim, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 1),
         )
 
         # 将模型移动到GPU（如果可用）

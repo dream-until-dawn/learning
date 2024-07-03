@@ -1,11 +1,11 @@
 import time
+
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter
 
 from model import SACModel
 from player import Player, Pool
-from torch.utils.tensorboard import SummaryWriter
-
 import config
 
 
@@ -48,15 +48,20 @@ class SACLearning:
             value = _to.data * 0.995 + _from.data * 0.005
             _to.data.copy_(value)
 
-    def get_prob_entropy(
+    def get_action_entropy(
         self, state: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
         s_tensor = state.float().reshape(-1, config.prev_dim).to(self.device)
-        prob: torch.Tensor = self.model_action(s_tensor)
-        entropy: torch.Tensor = prob * (prob + 1e-8).log()
-        entropy: torch.Tensor = -entropy.sum(dim=1, keepdim=True)
+        mu, sigma = self.model_action(s_tensor)
+        dist = torch.distributions.Normal(mu, sigma)
 
-        return prob, entropy
+        action: torch.Tensor = dist.rsample()
+        entropy: torch.Tensor = (
+            dist.log_prob(action) - (1 - action.tanh() ** 2 + 1e-8).log()
+        )
+        entropy: torch.Tensor = -entropy
+
+        return action, entropy
 
     def requires_grad(self, model: nn.Sequential, value: bool) -> None:
         for param in model.parameters():
@@ -69,26 +74,29 @@ class SACLearning:
 
         # 计算target
         with torch.no_grad():
-            # 计算动作的熵
-            prob, entropy = self.get_prob_entropy(next_state)
-            target1: torch.Tensor = self.model_value1_next(next_state)
-            target2: torch.Tensor = self.model_value2_next(next_state)
+            # 计算动作和熵
+            next_action, entropy = self.get_action_entropy(next_state)
+
+            # 评估next_state的价值
+            input = torch.cat([next_state, next_action], dim=1)
+            target1 = self.model_value1_next(input)
+            target2 = self.model_value2_next(input)
             target = torch.min(target1, target2)
 
         # 加权熵,熵越大越好
-        target = (prob * target).sum(dim=1, keepdim=True)
         target = target + self.alpha * entropy
-        target = target * 0.98 * (1 - over) + reward
+        target = target * 0.99 * (1 - over) + reward
 
         # 计算value
-        value = self.model_value1(state).gather(dim=1, index=action)
+        value = self.model_value1(torch.cat([state, action], dim=1))
         loss = torch.nn.functional.mse_loss(value, target)
         self.writer.add_scalar("tarin/Value Loss", loss.item(), self.step)  # 记录损失值
+
         loss.backward()
         self.optimizer_value1.step()
         self.optimizer_value1.zero_grad()
 
-        value = self.model_value2(state).gather(dim=1, index=action)
+        value = self.model_value2(torch.cat([state, action], dim=1))
         loss = torch.nn.functional.mse_loss(value, target)
         loss.backward()
         self.optimizer_value2.step()
@@ -101,21 +109,21 @@ class SACLearning:
         self.requires_grad(self.model_value2, False)
         self.requires_grad(self.model_action, True)
 
-        # 计算熵
-        prob, entropy = self.get_prob_entropy(state)
+        # 计算action和熵
+        action, entropy = self.get_action_entropy(state)
 
         # 计算value
-        value1 = self.model_value1(state)
-        value2 = self.model_value2(state)
+        value1 = self.model_value1(torch.cat([state, action], dim=1))
+        value2 = self.model_value2(torch.cat([state, action], dim=1))
         value: torch.Tensor = torch.min(value1, value2)
 
-        # 求期望求和
-        value = (prob * value).sum(dim=1, keepdim=True)
-
-        # 加权熵
+        # 加权熵,熵越大越好
         loss = -(value + self.alpha * entropy).mean()
-        self.writer.add_scalar("tarin/Policy Loss", loss.item(), self.step)  # 记录损失值
+        self.writer.add_scalar(
+            "tarin/Policy Loss", loss.item(), self.step
+        )  # 记录损失值
 
+        # 使用model_value计算model_action的loss
         loss.backward()
         self.optimizer_action.step()
         self.optimizer_action.zero_grad()
@@ -124,30 +132,24 @@ class SACLearning:
 
     def train(self):
         # 训练N次
-        for epoch in range(config.total_training_epochs):
+        for epoch in range(10000):
             # 更新N条数据
             self.pool.update()
-
-            # 每次更新过数据后,学习N次
-            for i in range(config.min_steps_per_epoch):
-                # 采样一批数据
-                state, action, reward, next_state, over = self.pool.sample()
-
-                # 训练
-                self.train_value(state, action, reward, next_state, over)
-                self.train_action(state)
-                self.soft_update(self.model_value1, self.model_value1_next)
-                self.soft_update(self.model_value2, self.model_value2_next)
-                self.step += 1
-
+            # 采样一批数据
+            state, action, reward, next_state, over = self.pool.sample()
+            # 训练
+            self.train_value(state, action, reward, next_state, over)
+            self.train_action(state)
+            self.soft_update(self.model_value1, self.model_value1_next)
+            self.soft_update(self.model_value2, self.model_value2_next)
+            self.step += 1
             # self.alpha *= 0.9
-            self.writer.add_scalar("tarin/alpha", self.alpha, self.step)  # 记录
 
-            if epoch % config.test_frequency == 0:
+            if epoch % 100 == 0:
                 test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
-                print(epoch, len(self.pool), self.alpha, test_result)
+                print(f"{epoch}\t{self.step}\t{test_result}")
                 self.writer.add_scalar(
-                    "tarin/test_result", test_result, self.step
+                    "tarin/test result", test_result, self.step
                 )  # 记录
 
 
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     if True:
         sacModel = SACModel()
         sacModel.loadModel()
-        
+
         player = Player(sacModel.model_action)
         pool = Pool(player)
 
@@ -169,7 +171,6 @@ if __name__ == "__main__":
             pool,
         )
         sacLearning.train()
-        sacLearning.writer.close()
         sacModel.saveModel(
             sacLearning.model_action, sacLearning.model_value1, sacLearning.model_value2
         )

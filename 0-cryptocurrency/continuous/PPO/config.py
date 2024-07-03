@@ -39,12 +39,12 @@ prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 1) * 4
 learning_rate_action = 5e-4
 learning_rate_value = 5e-3
 # 折扣因子(Discount Factor)
-discount_factor = 0.9
+# discount_factor = 0.9
 # 训练批次次数(Training Epochs)
-training_epochs = 10
+# training_epochs = 10
 # 训练总次数(Total Training Epochs)
-total_training_epochs = 1000
+# total_training_epochs = 1000
 # 每个Epoch的最小步数(Minimum Steps per Epoch)
-min_steps_per_epoch = 200
+# min_steps_per_epoch = 200
 # 测试频率(Test Frequency)
-test_frequency = 10
+# test_frequency = 10

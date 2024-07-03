@@ -40,10 +40,10 @@ learning_rate_action = 2e-4
 learning_rate_value1 = 2e-3
 learning_rate_value2 = 2e-3
 # 折扣因子(Discount Factor)
-discount_factor = 0.995
+# discount_factor = 0.995
 # 训练总次数(Total Training Epochs)
-total_training_epochs = 1000
+# total_training_epochs = 1000
 # 每个Epoch的最小步数(Minimum Steps per Epoch)
-min_steps_per_epoch = 200
+# min_steps_per_epoch = 200
 # 测试频率(Test Frequency)
-test_frequency = 10
+# test_frequency = 10

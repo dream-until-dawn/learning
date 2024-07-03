@@ -1,15 +1,14 @@
 import time
-
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from model import LearningModel, PPOModel
+from model import PPOModel, LearningModel
 from player import Player
 import config
 
 
-class PPOLearning:
+class PPOTrainLearning:
     def __init__(
         self,
         model_action: PPOModel,
@@ -26,7 +25,9 @@ class PPOLearning:
             model_value.parameters(), lr=config.learning_rate_value
         )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.writer = SummaryWriter(log_dir=f"{config.log_dir}/{time.strftime('%Y-%m-%d-%H-%M')}")
+        self.writer = SummaryWriter(
+            log_dir=f"{config.log_dir}/{time.strftime('%Y-%m-%d-%H-%M')}"
+        )
         self.step = 0
 
     def requires_grad(self, model: nn.Sequential, value: bool) -> None:
@@ -40,15 +41,18 @@ class PPOLearning:
         # 计算target
         with torch.no_grad():
             target: torch.Tensor = self.model_value(next_state)
-        target: torch.Tensor = target * config.discount_factor * (1 - over) + reward
+        target: torch.Tensor = target * 0.98 * (1 - over) + reward
 
         # 每批数据反复训练10次
-        for _ in range(config.training_epochs):
+        for _ in range(10):
             # 计算value
             value = self.model_value(state)
 
             loss = torch.nn.functional.mse_loss(value, target)
-            self.writer.add_scalar("Value Loss", loss.item(), self.step)  # 记录损失值
+            self.writer.add_scalar(
+                "tarin/Value Loss", loss.item(), self.step
+            )  # 记录损失值
+
             loss.backward()
             self.optimizer_value.step()
             self.optimizer_value.zero_grad()
@@ -56,11 +60,11 @@ class PPOLearning:
         # 减去value相当于去基线
         return (target - value).detach()
 
-    def train_action(self, state, value):
+    def train_action(self, state, action, value):
         self.requires_grad(self.model_action, True)
         self.requires_grad(self.model_value, False)
 
-        # 计算当前state的价值
+        # 计算当前state的价值,其实就是Q(state,action),这里是用蒙特卡洛法估计的
         delta = []
         for i in range(len(value)):
             s = 0
@@ -71,22 +75,26 @@ class PPOLearning:
 
         # 更新前的动作概率
         with torch.no_grad():
-            prob_old = self.model_action(state)
+            mu, sigma = self.model_action(state)
+            prob_old = torch.distributions.Normal(mu, sigma).log_prob(action).exp()
 
         # 每批数据反复训练10次
-        for _ in range(config.training_epochs):
+        for _ in range(10):
             # 更新后的动作概率
-            prob_new = self.model_action(state)
+            mu, sigma = self.model_action(state)
+            prob_new = torch.distributions.Normal(mu, sigma).log_prob(action).exp()
 
             # 求出概率的变化
-            ratio: torch.Tensor = prob_new / (prob_old + 1e-8)
+            ratio: torch.Tensor = prob_new / prob_old
 
             # 计算截断的和不截断的两份loss,取其中小的
             surr1 = ratio * delta
             surr2 = ratio.clamp(0.8, 1.2) * delta
 
             loss = -torch.min(surr1, surr2).mean()
-            self.writer.add_scalar("Policy Loss", loss.item(), self.step)  # 记录损失值
+            self.writer.add_scalar(
+                "tarin/Policy Loss", loss.item(), self.step
+            )  # 记录损失值
 
             # 更新参数
             loss.backward()
@@ -97,44 +105,42 @@ class PPOLearning:
 
     def train(self):
         # 训练N局
-        for epoch in range(config.total_training_epochs):
+        for epoch in range(100):
             # 一个epoch最少玩N步
             steps = 0
-            while steps < config.min_steps_per_epoch:
-                state, _, reward, next_state, over, _ = self.player.play()
+            while steps < 200:
+                state, action, reward, next_state, over, _ = self.player.play()
                 steps += len(state)
 
                 # 训练两个模型
                 delta = self.train_value(state, reward, next_state, over)
-                loss = self.train_action(state, delta)
+                loss = self.train_action(state, action, delta)
                 self.step += 1
 
-            if epoch % config.test_frequency == 0:
-                test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
-                print(epoch, loss, test_result)
-                self.writer.add_scalar(
-                    "Test Result", test_result, epoch
-                )  # 记录测试结果
+            # if epoch % 10 == 0:
+            test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
+            print(f"{epoch}\t{self.step}\t{loss}\t{test_result}")
+            self.writer.add_scalar(
+                "tarin/test result", test_result, self.step
+            )  # 记录
 
 
 if __name__ == "__main__":
     if True:
-        dqnModel = LearningModel()
-        dqnModel.loadModel()
+        learningModel = LearningModel()
+        learningModel.loadModel()
+        player = Player(learningModel.model_action)
 
-        player = Player(dqnModel.model_action)
-
-        ppoLearning = PPOLearning(
-            dqnModel.model_action,
-            dqnModel.model_value,
+        PPOTrain = PPOTrainLearning(
+            learningModel.model_action,
+            learningModel.model_value,
             player,
         )
-        ppoLearning.train()
-        ppoLearning.writer.close()
-        dqnModel.saveModel(ppoLearning.model_action, ppoLearning.model_value)
+        PPOTrain.train()
+        learningModel.saveModel(PPOTrain.model_action, PPOTrain.model_value)
     else:
-        dqnModel = LearningModel(mode="eval")
-        dqnModel.loadModel()
+        learningModel = DQNModel(mode="eval")
+        learningModel.loadModel()
 
-        player = Player(dqnModel.model_action)
+        player = Player(learningModel.model_action)
         player.play(show=True)

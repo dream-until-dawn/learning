@@ -12,7 +12,7 @@ import config
 
 class Player:
     def __init__(self, model_action: PPOModel):
-        self.env = MyWrapper()
+        self.env = MyWrapper(target="test")
         self.model_action = model_action
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -64,8 +64,15 @@ class Player:
 
 
 if __name__ == "__main__":
-    learningModel = LearningModel()
+    learningModel = LearningModel(mode="eval")
+    learningModel.loadModel()
     player = Player(learningModel.model_action)
 
-    state, action, reward, next_state, over, _ = player.play()
-    print(state.shape, action.shape, reward.shape, next_state.shape, over.shape)
+    for _ in range(50):
+        state, action, reward, next_state, over, _ = player.play()
+        reward = np.array(reward)
+        win_reward = np.array(reward > 0)
+        count = np.sum(win_reward)
+        print(
+            f"count: {count}\twin rate: {count / len(reward)*100:.2f}%\tsum reward: {np.sum(reward)}"
+        )

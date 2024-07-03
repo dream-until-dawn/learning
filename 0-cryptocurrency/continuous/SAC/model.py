@@ -5,6 +5,34 @@ import torch.nn as nn
 import config
 
 
+# 定义模型
+class ActionModel(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.s = torch.nn.Sequential(
+            torch.nn.Linear(config.prev_dim, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+        )
+        self.mu = torch.nn.Sequential(
+            torch.nn.Linear(64, 1),
+            torch.nn.Sigmoid(),
+        )
+        self.sigma = torch.nn.Sequential(
+            torch.nn.Linear(64, 1),
+            torch.nn.Sigmoid(),
+        )
+
+    def forward(self, state):
+        state = self.s(state)
+
+        return self.mu(state), self.sigma(state).exp()
+
+
 class SACModel:
 
     def __init__(self, mode="train"):
@@ -24,54 +52,44 @@ class SACModel:
     ) -> tuple[
         nn.Sequential, nn.Sequential, nn.Sequential, nn.Sequential, nn.Sequential
     ]:
-        # 演员模型,计算每个动作的概率
-        model_action = torch.nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
-            # nn.Sigmoid(),
-            torch.nn.Softmax(dim=1),
-        )
+        model_action = ActionModel()
         model_value1 = torch.nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
+            torch.nn.Linear(config.prev_dim + 1, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 2),
         )
         model_value2 = torch.nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
+            torch.nn.Linear(config.prev_dim + 1, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 2),
         )
         model_value1_next = torch.nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
+            torch.nn.Linear(config.prev_dim + 1, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 2),
         )
         model_value2_next = torch.nn.Sequential(
-            nn.Linear(config.prev_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
+            torch.nn.Linear(config.prev_dim + 1, 256),
+            torch.nn.ReLU(),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 2),
         )
+
         model_value1_next.load_state_dict(model_value1.state_dict())
         model_value2_next.load_state_dict(model_value2.state_dict())
 
