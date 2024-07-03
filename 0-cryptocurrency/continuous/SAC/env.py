@@ -20,6 +20,8 @@ class MyWrapper(gym.Wrapper):
         self.read_ds = readDS(open_file_name)
         self.df = self.read_ds.pull_data(target)
         self.df = self.df.set_index("time")
+        del self.df["close"]
+        del self.df["volume"]
         self.episode = 0
         self.data_index = 0
         self.total_steps = len(self.df)
@@ -66,7 +68,7 @@ class MyWrapper(gym.Wrapper):
         # 反转动作
         reverse_action = 1 - action
         # 下一状态幅度
-        next_extent = self.next_state.iloc[-1]["extent"] * 100
+        next_extent = self.next_state.iloc[-1]["涨幅"]
         # 计算奖励
         reward = action * next_extent
         reverse_reward = reverse_action * next_extent * -1
@@ -82,3 +84,4 @@ if __name__ == "__main__":
 
     for i in range(100):
         state, reward, over, _ = env.step(random.random())
+        print(f"reward: {reward}")

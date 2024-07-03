@@ -1,29 +1,32 @@
 # 技术指标列表
 TECHNICAL_INDICATORS_LIST = [
     "time",
-    # "open",
-    "high",
-    "low",
     "close",
     "volume",
-    "extent",
-    "adx",
-    "rsi",
-    "macd",
-    "macdsignal",
-    "macdhist",
-    "c_sma_4",  # 1h
-    "c_sma_16",  # 4h
-    "c_sma_32",  # 8h
-    "c_sma_48",  # 12h
-    "c_sma_96",  # 24h
-    "c_sma_288",  # 72h
-    "v_sma_4",  # 1h
-    "v_sma_16",  # 4h
-    "v_sma_32",  # 8h
-    "v_sma_48",  # 12h
-    "v_sma_96",  # 24h
-    "v_sma_288",  # 72h
+    "MACD",
+    "MACD信号线",
+    "RSI",
+    "band-Upper",
+    "band-Lower",
+    "VWAP",
+    "ATR",
+    "%K",
+    "%D",
+    "volRatio_5",
+    "VPR",
+    "SMA_c4",
+    "SMA_c16",
+    "SMA_c48",
+    "SMA_c96",
+    "SMA_c288",
+    "SMA_v4",
+    "SMA_v16",
+    "SMA_v48",
+    "SMA_v96",
+    "SMA_v288",
+    "涨幅",
+    "振幅",
+    "量涨幅",
 ]
 
 # 模型名称
@@ -33,18 +36,8 @@ model_dir = "model"
 # 日志保存路径
 log_dir = "train_log/PPO"
 # 输入集大小
-prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 1) * 4
+prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 3) * 4
 # ####### 策略参数 #######
 # 学习率(Learning Rate)
 learning_rate_action = 5e-4
 learning_rate_value = 5e-3
-# 折扣因子(Discount Factor)
-# discount_factor = 0.9
-# 训练批次次数(Training Epochs)
-# training_epochs = 10
-# 训练总次数(Total Training Epochs)
-# total_training_epochs = 1000
-# 每个Epoch的最小步数(Minimum Steps per Epoch)
-# min_steps_per_epoch = 200
-# 测试频率(Test Frequency)
-# test_frequency = 10
