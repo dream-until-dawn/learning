@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from model import PPOModel, LearningModel
+from model import PPOModel, MyModel
 from player import Player
 import config
 
@@ -105,29 +105,26 @@ class PPOTrainLearning:
 
     def train(self):
         # 训练N局
-        for epoch in range(100):
+        for epoch in range(1000):
             # 一个epoch最少玩N步
-            steps = 0
-            while steps < 200:
-                state, action, reward, next_state, over, _ = self.player.play()
-                steps += len(state)
+            state, action, reward, next_state, over, _ = self.player.play()
 
-                # 训练两个模型
-                delta = self.train_value(state, reward, next_state, over)
-                loss = self.train_action(state, action, delta)
-                self.step += 1
+            # 训练两个模型
+            delta = self.train_value(state, reward, next_state, over)
+            loss = self.train_action(state, action, delta)
+            self.step += 1
 
-            # if epoch % 10 == 0:
-            test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
-            print(f"{epoch}\t{self.step}\t{loss}\t{test_result}")
-            self.writer.add_scalar(
-                "tarin/test result", test_result, self.step
-            )  # 记录
+            if epoch % 10 == 0:
+                test_result = sum([self.player.play()[-1] for _ in range(5)]) / 5
+                print(f"{epoch}\t{self.step}\t{loss}\t{test_result}")
+                self.writer.add_scalar(
+                    "tarin/test result", test_result, self.step
+                )  # 记录
 
 
 if __name__ == "__main__":
     if True:
-        learningModel = LearningModel()
+        learningModel = MyModel()
         learningModel.loadModel()
         player = Player(learningModel.model_action)
 

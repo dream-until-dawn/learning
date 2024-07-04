@@ -145,8 +145,8 @@ class SACLearning:
             self.step += 1
             # self.alpha *= 0.9
 
-            if epoch % 100 == 0:
-                test_result = sum([self.player.play()[-1] for _ in range(20)]) / 20
+            if epoch % 10 == 0:
+                test_result = sum([self.player.play()[-1] for _ in range(5)]) / 5
                 print(f"{epoch}\t{self.step}\t{test_result}")
                 self.writer.add_scalar(
                     "tarin/test result", test_result, self.step

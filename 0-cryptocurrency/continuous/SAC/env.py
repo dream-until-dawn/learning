@@ -35,11 +35,11 @@ class MyWrapper(gym.Wrapper):
 
     @property  # 当前状态
     def current_state(self) -> pd.DataFrame:
-        return self.df.iloc[self.data_index - 3 : self.data_index + 1]
+        return self.df.iloc[self.data_index]
 
     @property  # 下一状态
     def next_state(self) -> pd.DataFrame:
-        return self.df.iloc[self.data_index - 2 : self.data_index + 2]
+        return self.df.iloc[self.data_index + 1]
 
     # 设置随机种子
     def seed(self, seed=None) -> None:
@@ -68,7 +68,7 @@ class MyWrapper(gym.Wrapper):
         # 反转动作
         reverse_action = 1 - action
         # 下一状态幅度
-        next_extent = self.next_state.iloc[-1]["涨幅"]
+        next_extent = self.next_state["涨幅"]
         # 计算奖励
         reward = action * next_extent
         reverse_reward = reverse_action * next_extent * -1

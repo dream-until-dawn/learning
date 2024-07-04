@@ -11,19 +11,19 @@ class PPOModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.s = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
         )
         self.mu = torch.nn.Sequential(
-            torch.nn.Linear(64, 1),
+            torch.nn.Linear(32, 1),
             torch.nn.Sigmoid(),
         )
         self.sigma = torch.nn.Sequential(
-            torch.nn.Linear(64, 1),
+            torch.nn.Linear(32, 1),
             torch.nn.Sigmoid(),
         )
 
@@ -33,7 +33,7 @@ class PPOModel(torch.nn.Module):
         return self.mu(state), self.sigma(state).exp()
 
 
-class LearningModel:
+class MyModel:
 
     def __init__(self, mode="train"):
         self.modelName = config.modelName
@@ -46,13 +46,13 @@ class LearningModel:
         model_action = PPOModel()
 
         model_value = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 1),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 1),
         )
 
         # 将模型移动到GPU（如果可用）
@@ -121,6 +121,6 @@ class LearningModel:
 
 
 if __name__ == "__main__":
-    model = LearningModel()
+    model = MyModel()
     model.saveModel()
     model.loadModel()

@@ -1,12 +1,11 @@
 import random
 
 import torch
-import torch.nn as nn
 from torch.distributions import Normal
 import numpy as np
 
 from env import MyWrapper
-from model import PPOModel, LearningModel
+from model import PPOModel, MyModel
 import config
 
 
@@ -36,6 +35,9 @@ class Player:
             normal_dist = Normal(mu_value, sigma_value)
             # 生成服从正态分布的随机数，并截断在0到1之间
             a = normal_dist.sample().clamp(0, 1).item()
+            # 10%的概率随机动作
+            if random.uniform(0, 1) <= 0.1:
+                a = random.uniform(0, 1)
 
             ns, r, o, _ = self.env.step(a)
 
@@ -64,8 +66,10 @@ class Player:
 
 
 if __name__ == "__main__":
-    learningModel = LearningModel()
-    player = Player(learningModel.model_action)
+    myModel = MyModel()
+    myModel.loadModel()
+    player = Player(myModel.model_action)
 
-    state, action, reward, next_state, over, _ = player.play()
-    print(state.shape, action.shape, reward.shape, next_state.shape, over.shape)
+    for _ in range(20):
+        state, action, reward, next_state, over, _ = player.play()
+        print(state.shape, action.shape, reward.shape, next_state.shape, over.shape)

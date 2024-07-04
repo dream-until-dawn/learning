@@ -11,19 +11,19 @@ class ActionModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.s = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
         )
         self.mu = torch.nn.Sequential(
-            torch.nn.Linear(64, 1),
+            torch.nn.Linear(32, 1),
             torch.nn.Sigmoid(),
         )
         self.sigma = torch.nn.Sequential(
-            torch.nn.Linear(64, 1),
+            torch.nn.Linear(32, 1),
             torch.nn.Sigmoid(),
         )
 
@@ -54,40 +54,40 @@ class SACModel:
     ]:
         model_action = ActionModel()
         model_value1 = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim + 1, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim + 1, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 2),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 2),
         )
         model_value2 = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim + 1, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim + 1, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 2),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 2),
         )
         model_value1_next = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim + 1, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim + 1, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 2),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 2),
         )
         model_value2_next = torch.nn.Sequential(
-            torch.nn.Linear(config.prev_dim + 1, 256),
-            torch.nn.ReLU(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(config.prev_dim + 1, 128),
             torch.nn.ReLU(),
             torch.nn.Linear(128, 64),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 2),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 2),
         )
 
         model_value1_next.load_state_dict(model_value1.state_dict())

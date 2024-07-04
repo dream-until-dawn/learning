@@ -36,7 +36,9 @@ class Player:
             normal_dist = Normal(mu_value, sigma_value)
             # 生成服从正态分布的随机数，并截断在0到1之间
             action = normal_dist.sample().clamp(0, 1).item()
-            # print(f"action\t{action}")
+            # 10%的概率随机动作
+            if random.uniform(0, 1) <= 0.1:
+                action = random.uniform(0, 1)
 
             next_state, reward, over, _ = self.env.step(action)
 
@@ -102,10 +104,9 @@ class Pool:
 
 if __name__ == "__main__":
     sacModel = SACModel()
+    sacModel.loadModel()
 
-    model_action = sacModel.model_action
-
-    player = Player(model_action)
+    player = Player(sacModel.model_action)
     pool = Pool(player)
 
     pool.update()

@@ -28,6 +28,7 @@ class MyWrapper(gym.Wrapper):
         self.starting_point = 4
         self.ending_point = self.total_steps - 4
         self.play_steps = 512 - 2
+        print(f"df shape: {self.df.shape}")
 
     @property  # 当前轮已执行步数
     def step_number(self) -> int:
@@ -35,11 +36,11 @@ class MyWrapper(gym.Wrapper):
 
     @property  # 当前状态
     def current_state(self) -> pd.DataFrame:
-        return self.df.iloc[self.data_index - 3 : self.data_index + 1]
+        return self.df.iloc[self.data_index]
 
     @property  # 下一状态
     def next_state(self) -> pd.DataFrame:
-        return self.df.iloc[self.data_index - 2 : self.data_index + 2]
+        return self.df.iloc[self.data_index + 1]
 
     # 设置随机种子
     def seed(self, seed=None) -> None:
@@ -58,7 +59,7 @@ class MyWrapper(gym.Wrapper):
         # print(
         #     f"start: {self.starting_point}\tend: {self.ending_point}\ttotal: {self.total_steps}"
         # )
-        return self.current_state.to_numpy()
+        return self.next_state.to_numpy()
 
     def step(self, action) -> tuple[np.ndarray, float, bool, dict]:
         over = False
@@ -69,7 +70,7 @@ class MyWrapper(gym.Wrapper):
         # 反转动作
         reverse_action = 1 - action
         # 下一状态幅度
-        next_extent = self.next_state.iloc[-1]["涨幅"]
+        next_extent = self.next_state["涨幅"]
         # 计算奖励
         reward = action * next_extent
         reverse_reward = reverse_action * next_extent * -1
@@ -84,5 +85,8 @@ if __name__ == "__main__":
     state = env.reset()
 
     for i in range(100):
-        state, reward, over, _ = env.step(random.random())
-        print(f"reward: {reward}")
+        action = 1
+        state, reward, over, _ = env.step(action)
+        print(
+            f"当前动作: {action}\t状态: {state[-3]:.2f}\t奖励: {reward:.2f}"
+        )

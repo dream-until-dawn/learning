@@ -36,7 +36,7 @@ model_dir = "model"
 # 日志保存路径
 log_dir = "train_log/PPO"
 # 输入集大小
-prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 3) * 4
+prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 3) * 1
 # ####### 策略参数 #######
 # 学习率(Learning Rate)
 learning_rate_action = 5e-4

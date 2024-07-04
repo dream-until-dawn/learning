@@ -1,34 +1,36 @@
-import random
-
 import torch
-import torch.nn as nn
 from torch.distributions import Normal
+import pandas as pd
 import numpy as np
 
-from env import MyWrapper
-from model import PPOModel, LearningModel
-import config
+from model import PPOModel, MyModel
+
+
+class readDS:
+    def __init__(self, open_file_name):
+        self.open_file_name = open_file_name
+
+    def pull_data(self, target="test") -> pd.DataFrame:
+        return pd.read_csv(self.open_file_name + f"_{target}.csv")
 
 
 class Player:
     def __init__(self, model_action: PPOModel):
-        self.env = MyWrapper(target="test")
         self.model_action = model_action
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.capital = 1e3
+        self.index = 0
+        self.position = 0
+        self.data = readDS("DS/BTC-USDT-SWAP-15m").pull_data()
+        print(self.data.shape)
+        self.win_count = 0
+        self.total_count = len(self.data) - 10  # 总次数
 
-    # 玩一局游戏并记录数据
     def play(self):
-        state = []
-        action = []
-        reward = []
-        next_state = []
-        over = []
-
-        s = self.env.reset()
-        o = False
-        while not o:
-            # 根据概率采样
-            s_tensor = torch.FloatTensor(s).reshape(1, config.prev_dim).to(self.device)
+        while self.index < self.total_count:
+            # while self.index < 200:
+            s = self.data.iloc[self.index, 3:].values.astype(np.float32)
+            s_tensor = torch.FloatTensor(s).reshape(1, 24).to(self.device)
             mu, sigma = self.model_action(s_tensor)
             mu_value = mu.item()
             sigma_value = sigma.item()
@@ -36,43 +38,24 @@ class Player:
             normal_dist = Normal(mu_value, sigma_value)
             # 生成服从正态分布的随机数，并截断在0到1之间
             a = normal_dist.sample().clamp(0, 1).item()
-
-            ns, r, o, _ = self.env.step(a)
-
-            state.append(s)
-            s = ns
-            action.append(a)
-            reward.append(r)
-            next_state.append(ns)
-            over.append(o)
-
-        state = (
-            torch.FloatTensor(np.array(state))
-            .reshape(-1, config.prev_dim)
-            .to(self.device)
+            ex = self.data.iloc[self.index + 1, 3:].values.astype(np.float32)[-3]
+            # print(f"action: {a:.4f}\tex: {ex:.4f}")
+            if a > 0.5 and ex > 0.0005:
+                self.win_count += 1
+            elif a < 0.5 and ex < -0.0005:
+                self.win_count += 1
+            if a > 0.5:
+                self.capital *= 1 - 0.0005 + ex
+            self.index += 1
+        print(
+            f"final capital: {self.capital}\tfinal win rate: {self.win_count / self.total_count:.4f}"
         )
-        action = torch.FloatTensor(np.array(action)).reshape(-1, 1).to(self.device)
-        reward = torch.FloatTensor(np.array(reward)).reshape(-1, 1).to(self.device)
-        next_state = (
-            torch.FloatTensor(np.array(next_state))
-            .reshape(-1, config.prev_dim)
-            .to(self.device)
-        )
-        over = torch.LongTensor(np.array(over)).reshape(-1, 1).to(self.device)
-
-        return state, action, reward, next_state, over, reward.sum().item()
 
 
 if __name__ == "__main__":
-    learningModel = LearningModel(mode="eval")
-    learningModel.loadModel()
-    player = Player(learningModel.model_action)
+    myModel = MyModel(mode="eval")
+    myModel.loadModel()
+    player = Player(myModel.model_action)
 
-    for _ in range(50):
-        state, action, reward, next_state, over, _ = player.play()
-        reward = np.array(reward)
-        win_reward = np.array(reward > 0)
-        count = np.sum(win_reward)
-        print(
-            f"count: {count}\twin rate: {count / len(reward)*100:.2f}%\tsum reward: {np.sum(reward)}"
-        )
+    for _ in range(1):
+        player.play()

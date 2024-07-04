@@ -157,6 +157,10 @@ class DataTreating:
         df = pd.DataFrame(
             self.npyData, columns=["time", "open", "high", "low", "close", "volume"]
         )
+        rows_to_drop = df[df["volume"] == 0.0]
+        df = df[df["volume"] != 0.0]
+        print(f"删除{rows_to_drop.shape[0]}行\t{rows_to_drop}")
+        print(f"保留{df.shape[0]}行")
         df["time"] = pd.to_datetime(df["time"], unit="ms").dt.strftime("%Y-%m-%d %H:%M")
         Indicators.calculate_macd(df)
         Indicators.calculate_rsi(df)
@@ -192,6 +196,21 @@ class DataTreating:
             else df[self.testDataLength :]
         )
 
+    @staticmethod
+    def check_data_is_NaN(df: pd.DataFrame) -> bool:
+        # 检查每列是否有 NaN 值
+        nan_columns = df.isna().any()
+        print("Columns with NaN values:")
+        print(nan_columns)
+        # 获取包含 NaN 值的行
+        rows_with_nan = df[df.isna().any(axis=1)]
+        print("Rows with NaN values:")
+        print(rows_with_nan)
+        print(df.shape)
+        df_cleaned = df.dropna(axis=0)
+        print(df_cleaned.shape, df_cleaned.shape[0] - df.shape[0])
+        return True
+
 
 # 读取数据类
 class readDS:
@@ -207,3 +226,4 @@ if __name__ == "__main__":
     readDSObject = readDS("DS/BTC-USDT-SWAP-15m")
     res = readDSObject.pull_data()
     print(res.columns)
+    DataTreating.check_data_is_NaN(res)
