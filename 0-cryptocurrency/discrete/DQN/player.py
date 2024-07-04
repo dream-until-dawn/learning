@@ -1,7 +1,5 @@
-import time
 import random
 
-from IPython import display
 import torch
 import torch.nn as nn
 import numpy as np
@@ -14,79 +12,89 @@ class Player:
     def __init__(self, model: nn.Sequential):
         self.env = MyWrapper()
         self.model = model
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def updata_model(self, model: nn.Sequential):
+        self.model = model
+
+    def check_nan(self, tensor, name):
+        nan_indices = torch.where(torch.isnan(tensor))
+        inf_indices = torch.where(torch.isinf(tensor))
+
+        if nan_indices[0].numel() > 0:
+            print(f"{name} contains NaN at positions: {nan_indices}")
+
+        if inf_indices[0].numel() > 0:
+            print(f"{name} contains Inf at positions: {inf_indices}")
 
     # 玩一局游戏并记录数据
-    def play(self, show=False):
-        data = []
+    def play(self):
+        record_state = []
+        record_action = []
+        record_reward = []
+        record_next_state = []
+        record_over = []
         reward_sum = 0
 
         state = self.env.reset()
         over = False
         while not over:
-            action = self.model(torch.FloatTensor(state).reshape(1, 4)).argmax().item()
+            action = (
+                self.model(torch.FloatTensor(state).to(self.device)).argmax().item()
+            )
+            # 随机动作概率为0.1
             if random.random() < 0.1:
-                action = self.env.action_space.sample()
+                action = self.env.random_action()
 
             next_state, reward, over, _ = self.env.step(action)
+            record_state.append(state)
+            record_action.append(action)
+            record_reward.append(reward)
+            record_next_state.append(next_state)
+            record_over.append(over)
 
-            data.append((state, action, reward, next_state, over))
             reward_sum += reward
 
             state = next_state
 
-            if show:
-                # display.clear_output(wait=True)
-                self.env.show()
-                print(f"action: {action}\tReward: {reward}\tover: {over}")
-                time.sleep(0.1)
+        record_state = torch.FloatTensor(np.array(record_state)).to(self.device)
+        record_action = (
+            torch.LongTensor(np.array(record_action)).reshape(-1, 1).to(self.device)
+        )
+        record_reward = (
+            torch.FloatTensor(np.array(record_reward)).reshape(-1, 1).to(self.device)
+        )
+        record_next_state = torch.FloatTensor(np.array(record_next_state)).to(
+            self.device
+        )
+        record_over = torch.FloatTensor(np.array(record_over)).to(self.device)
 
-        return data, reward_sum
-
-
-# 数据池
-class Pool:
-
-    def __init__(self, player: Player):
-        self.pool = []
-        self.player = player
-
-    def __len__(self):
-        return len(self.pool)
-
-    def __getitem__(self, i):
-        return self.pool[i]
-
-    # 更新动作池
-    def update(self):
-        # 每次更新不少于N条新数据
-        old_len = len(self.pool)
-        while len(self.pool) - old_len < 200:
-            self.pool.extend(self.player.play()[0])
-
-        # 只保留最新的N条数据
-        self.pool = self.pool[-2_0000:]
-
-    # 获取一批数据样本
-    def sample(self):
-        data = random.sample(self.pool, 64)
-
-        state = torch.FloatTensor(np.array([i[0] for i in data])).reshape(-1, 4)
-        action = torch.LongTensor(np.array([i[1] for i in data])).reshape(-1, 1)
-        reward = torch.FloatTensor(np.array([i[2] for i in data])).reshape(-1, 1)
-        next_state = torch.FloatTensor(np.array([i[3] for i in data])).reshape(-1, 4)
-        over = torch.LongTensor(np.array([i[4] for i in data])).reshape(-1, 1)
-
-        return state, action, reward, next_state, over
+        self.check_nan(record_state, "record_state")
+        self.check_nan(record_next_state, "record_next_state")
+        return (
+            record_state,
+            record_action,
+            record_reward,
+            record_next_state,
+            record_over,
+            reward_sum,
+        )
 
 
 if __name__ == "__main__":
     dqnModel = DQNModel()
-    model = dqnModel.model
-
-    player = Player(model)
-
-    pool = Pool(player)
-    data, reward_sum = player.play()
-    for row in data:
-        print(row)
+    dqnModel.loadModel()
+    player = Player(dqnModel.model)
+    (
+        record_state,
+        record_action,
+        record_reward,
+        record_next_state,
+        record_over,
+        reward_sum,
+    ) = player.play()
+    print(record_state.shape)
+    print(record_action.shape)
+    print(record_reward.shape)
+    print(record_next_state.shape)
     print(reward_sum)

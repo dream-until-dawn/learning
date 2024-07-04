@@ -2,28 +2,35 @@ import os
 import torch
 import torch.nn as nn
 
+import config
+
 
 class DQNModel:
 
     def __init__(self, mode="train"):
-        self.modelName = "DQN"
-        self.model_dir = "save_model"
+        self.modelName = config.modelName
+        self.model_dir = config.model_dir
         self.create_model_dir()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.getModel(mode)
 
     def getModel(self, mode) -> nn.Sequential:
         # 定义模型,评估状态下每个动作的价值
         model = torch.nn.Sequential(
-            torch.nn.Linear(4, 64),
+            torch.nn.Linear(config.prev_dim, 256),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 64),
+            torch.nn.Linear(256, 128),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, 2),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, 32),
+            torch.nn.ReLU(),
+            torch.nn.Linear(32, 5),
         )
         # 将模型移动到GPU（如果可用）
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("Using device:", device)
-        model.to(device)
+
+        print("Using device:", self.device)
+        model.to(self.device)
         if mode == "eval":
             model.eval()  # 设置为评估模式
         else:
@@ -63,4 +70,5 @@ class DQNModel:
 
 if __name__ == "__main__":
     model = DQNModel()
+    model.saveModel()
     model.loadModel()
