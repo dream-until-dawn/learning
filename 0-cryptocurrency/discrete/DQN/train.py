@@ -21,6 +21,7 @@ class DQNLearning:
     def train(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
         loss_fn = torch.nn.MSELoss()
+        revenue_list = []
 
         # 共更新N轮数据
         for epoch in range(500):
@@ -35,11 +36,16 @@ class DQNLearning:
                 record_over,
                 reward_sum,
             ) = player.play()
-            print(epoch, reward_sum)
+            print(f"第{epoch:4d}\t轮,总奖励为\t{reward_sum:.4f}")
             self.writer.add_scalar("tarin/reward sum", reward_sum, epoch)  # 记录
             self.writer.add_scalar(
                 "tarin/total revenue", self.player.env.total_revenue, epoch
             )  # 记录
+            revenue_list.append(self.player.env.total_revenue)
+            print(
+                f"cur:{self.player.env.total_revenue:.2f}\tmin:{min(revenue_list):.2f}\tmax:{max(revenue_list):.2f}\tavg:{sum(revenue_list)/len(revenue_list):.2f}"
+            )
+            print("----------", "end", "----------")
             # 计算value
             value = self.model(record_state).gather(dim=1, index=record_action)
 

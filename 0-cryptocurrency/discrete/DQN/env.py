@@ -40,6 +40,7 @@ class MyWrapper(gym.Wrapper):
         self.PS = 0
         self.UG = 0
         self.total_revenue = 1
+        self.max_total_revenue = 1
 
     @property  # 当前状态
     def current_state(self) -> pd.DataFrame:
@@ -98,6 +99,7 @@ class MyWrapper(gym.Wrapper):
         self.PS = 0
         self.UG = 0
         self.total_revenue = 1
+        self.max_total_revenue = 1
         return self.get_current_state()
 
     # 执行动作
@@ -109,7 +111,7 @@ class MyWrapper(gym.Wrapper):
             self.data_index > self.ending_point and self.PS == 0
         ) or self.data_index > self.total_steps - 10:
             over = True
-            print(f"end:步数已达到\t{self.total_revenue}")
+            # print(f"end:步数已达到\t{self.total_revenue}")
             return next_state, 0, over, {}
         # 资金不足
         if self.total_revenue < 0.1:
@@ -134,9 +136,9 @@ class MyWrapper(gym.Wrapper):
         next_increase = self.next_state["涨幅"] / 100
         if action == 0:
             if abs(next_increase) > 0.005:
-                return -0.1
+                return -0.01
             else:
-                return 0.1
+                return 0.005
         elif action == 1:
             self.PS = 1
             self.UG = next_increase - 0.0005
@@ -157,9 +159,10 @@ class MyWrapper(gym.Wrapper):
         elif action == 3:
             reward = self.UG - next_increase
             self.total_revenue *= 1 + self.UG
+            self.max_total_revenue = max(self.max_total_revenue, self.total_revenue)
             self.PS = 0
             self.UG = 0
-            return reward * 10
+            return reward * 10 + (self.total_revenue / self.max_total_revenue - 1)
         else:
             return -99
 
@@ -172,9 +175,10 @@ class MyWrapper(gym.Wrapper):
         elif action == 4:
             reward = self.UG - next_increase
             self.total_revenue *= 1 + self.UG
+            self.max_total_revenue = max(self.max_total_revenue, self.total_revenue)
             self.PS = 0
             self.UG = 0
-            return reward * 10
+            return reward * 10 + (self.total_revenue / self.max_total_revenue - 1)
         else:
             return -99
 
@@ -195,4 +199,5 @@ if __name__ == "__main__":
     while not over:
         action = env.random_action()
         state, reward, over, _ = env.step(action)
-        # print(f"reward: {reward}")
+        print(f"reward: {reward}")
+    print(f"total_revenue: {env.total_revenue}")

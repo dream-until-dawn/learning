@@ -1,1 +1,1 @@
-C:/Users/mj/.pyenv/pyenv-win/versions/3.9.13/python.exe 0-cryptocurrency\continuous\PPO\train.py
+C:/Users/mj/.pyenv/pyenv-win/versions/3.9.13/python.exe 0-cryptocurrency\discrete\DQN\train.py

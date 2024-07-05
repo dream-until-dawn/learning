@@ -13,6 +13,7 @@ class Player:
         self.env = MyWrapper()
         self.model = model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.action_dict = {0: "hlod", 1: "O L", 2: "O S", 3: "C L", 4: "C S"}
 
     def updata_model(self, model: nn.Sequential):
         self.model = model
@@ -57,13 +58,23 @@ class Player:
 
             state = next_state
 
+        record_reward = np.array(record_reward)
+        count = np.count_nonzero(record_reward == -99)
+        if count > 0:
+            print(f"动作错误次数: {count}")
+        record_action = np.array(record_action)
+        unique_action, action_counts = np.unique(record_action, return_counts=True)
+        # 计算每个元素出现的概率
+        probabilities = action_counts / len(record_action)
+        print(f"total: {len(record_action)}", end="\t")
+        for element, prob in zip(unique_action, probabilities):
+            print(f"{self.action_dict[element]}: {prob*100:.2f}%", end="\t")
+        print(
+            f"\nmax reward: {np.max(record_reward):.4f}\tmin reward: {np.min(record_reward[record_reward != -99]):.4f}"
+        )
         record_state = torch.FloatTensor(np.array(record_state)).to(self.device)
-        record_action = (
-            torch.LongTensor(np.array(record_action)).reshape(-1, 1).to(self.device)
-        )
-        record_reward = (
-            torch.FloatTensor(np.array(record_reward)).reshape(-1, 1).to(self.device)
-        )
+        record_action = torch.LongTensor(record_action).reshape(-1, 1).to(self.device)
+        record_reward = torch.FloatTensor(record_reward).reshape(-1, 1).to(self.device)
         record_next_state = torch.FloatTensor(np.array(record_next_state)).to(
             self.device
         )

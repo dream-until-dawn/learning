@@ -60,8 +60,12 @@ class DQNModel:
     def loadModel(self) -> None:
         if os.path.exists(f"{self.model_dir}/{self.modelName}.pth"):
             self.model.load_state_dict(
-                torch.load(f"{self.model_dir}/{self.modelName}.pth")
+                torch.load(
+                    f"{self.model_dir}/{self.modelName}.pth",
+                    map_location=torch.device("cpu"),
+                )
             )
+            self.model.to(self.device)
             print(f"{self.modelName}---模型加载成功!")
             self.checkModel()
         else:
