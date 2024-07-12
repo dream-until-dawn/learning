@@ -1,7 +1,5 @@
 import pandas as pd
-import numpy as np
 import os
-import pickle
 from datetime import datetime, timezone
 
 
@@ -11,23 +9,6 @@ class Tools:
     @staticmethod
     def check_file_exists(file_path):
         return os.path.isfile(file_path)
-
-    # 保存数据
-    @staticmethod
-    def saveData(filename, save_ndarray):
-        with open(filename, "wb") as fw:
-            pickle.dump(save_ndarray, fw)
-        return
-
-    # 读取数据
-    @staticmethod
-    def openData(filename):
-        try:
-            with open(filename, "rb") as fr:
-                return_Mat = pickle.load(fr)
-            return return_Mat
-        except:
-            return []
 
     # 将毫秒级时间戳转换为秒
     @staticmethod
@@ -144,24 +125,17 @@ class Indicators:
 class DataTreating:
     def __init__(self, open_file_name="DS/BTC-USDT-SWAP-15m") -> None:
         self.open_file_name = open_file_name
-        self.npyData: np.ndarray = np.array([])
-        self.dfData: pd.DataFrame = self.ndarray_to_dataframe()
         self.testDataLength = 0
 
-    def ndarray_to_dataframe(self, target="train") -> pd.DataFrame:
-        if Tools.check_file_exists(self.open_file_name + ".csv"):
-            print("csv文件存在,直接读取")
-            return pd.read_csv(self.open_file_name + ".csv")
-        self.npyData: np.ndarray = Tools.openData(self.open_file_name + ".npy")
-        self.npyData = self.npyData[:, 0:6].astype(float)
-        df = pd.DataFrame(
-            self.npyData, columns=["time", "open", "high", "low", "close", "volume"]
-        )
+    def treatingData(self) -> None:
+        if not Tools.check_file_exists(self.open_file_name + ".csv"):
+            exit("csv文件不存在")
+        df = pd.read_csv(self.open_file_name + ".csv")
         rows_to_drop = df[df["volume"] == 0.0]
         df = df[df["volume"] != 0.0]
         print(f"删除{rows_to_drop.shape[0]}行\t{rows_to_drop}")
         print(f"保留{df.shape[0]}行")
-        df["time"] = pd.to_datetime(df["time"], unit="ms").dt.strftime("%Y-%m-%d %H:%M")
+        df["ts"] = pd.to_datetime(df["ts"], unit="ms").dt.strftime("%Y-%m-%d %H:%M")
         Indicators.calculate_macd(df)
         Indicators.calculate_rsi(df)
         Indicators.calculate_band(df)
@@ -184,17 +158,17 @@ class DataTreating:
         del df["open"]
         del df["high"]
         del df["low"]
+        del df["volCcy"]
+        del df["volCcyQuote"]
+        del df["confirm"]
         self.testDataLength = int(df.shape[0] * 0.95)
+        print(
+            f"训练集长度{self.testDataLength}\t测试集长度{df.shape[0] - self.testDataLength}"
+        )
         df[300 : self.testDataLength].to_csv(
             self.open_file_name + "_train.csv", index=False
         )
         df[self.testDataLength :].to_csv(self.open_file_name + "_test.csv", index=False)
-
-        return (
-            df[300 : self.testDataLength]
-            if target == "train"
-            else df[self.testDataLength :]
-        )
 
     @staticmethod
     def check_data_is_NaN(df: pd.DataFrame) -> bool:
@@ -222,8 +196,9 @@ class readDS:
 
 
 if __name__ == "__main__":
-    # dataTreating = DataTreating()
-    readDSObject = readDS("DS/BTC-USDT-SWAP-15m")
+    # dataTreating = DataTreating("DS/BTC-USDT-SWAP-1D")
+    # dataTreating.treatingData()
+    readDSObject = readDS("DS/BTC-USDT-SWAP-1D")
     res = readDSObject.pull_data()
     print(res.columns)
     DataTreating.check_data_is_NaN(res)

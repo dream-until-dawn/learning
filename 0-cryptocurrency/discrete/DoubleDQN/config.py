@@ -1,6 +1,6 @@
 # 技术指标列表
 TECHNICAL_INDICATORS_LIST = [
-    "time",
+    "ts",
     "close",
     "volume",
     "MACD",
@@ -30,11 +30,11 @@ TECHNICAL_INDICATORS_LIST = [
 ]
 
 # 模型名称
-modelName = "cryptocurrency-DoubleDQN"
+modelName = "cryptocurrency-DoubleDQN-1D"
 # 模型保存路径
 model_dir = "model"
 # 日志保存路径
-log_dir = "train_log/DoubleDQN"
+log_dir = "train_log/DoubleDQN-1D"
 # 输入集大小
 prev_dim = (len(TECHNICAL_INDICATORS_LIST) - 3) * 2
 # ####### 策略参数 #######

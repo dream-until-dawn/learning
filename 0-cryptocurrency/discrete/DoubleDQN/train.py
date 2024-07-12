@@ -29,7 +29,7 @@ class DQNLearning:
         loss_fn = torch.nn.MSELoss()
         revenue_list = []
         # 共更新N轮数据
-        for epoch in range(1000):
+        for epoch in range(10000):
             # 更新模型参数
             self.player.update_model(self.model)
             # 采样数据

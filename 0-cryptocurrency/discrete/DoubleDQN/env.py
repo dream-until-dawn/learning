@@ -16,10 +16,10 @@ class readDS:
 # 定义环境
 class MyWrapper(gym.Wrapper):
 
-    def __init__(self, open_file_name="DS/BTC-USDT-SWAP-15m", target="train"):
+    def __init__(self, open_file_name="DS/BTC-USDT-SWAP-1D", target="train"):
         self.read_ds = readDS(open_file_name)
         self.df = self.read_ds.pull_data(target)
-        self.df = self.df.set_index("time")
+        self.df = self.df.set_index("ts")
         self.colse = self.df["close"]
         del self.df["close"]
         del self.df["volume"]
@@ -28,7 +28,7 @@ class MyWrapper(gym.Wrapper):
         self.total_steps = len(self.df)
         self.starting_point = 4
         self.ending_point = self.total_steps - 4
-        self.play_steps = 8640  # 3months
+        self.play_steps = 90  # 3months
         print(f"df shape: {self.df.shape},colos shape: {self.colse.shape}")
         self.action_dict = {
             0: "hold",
@@ -106,13 +106,6 @@ class MyWrapper(gym.Wrapper):
     def step(self, action) -> tuple[np.ndarray, float, bool, dict]:
         over = False
         next_state = self.get_next_state()  # 下一状态
-        # 是否已结束-超过限制并且没有持仓 or 超过总数目
-        if (
-            self.data_index > self.ending_point and self.PS == 0
-        ) or self.data_index > self.total_steps - 10:
-            over = True
-            # print(f"end:步数已达到\t{self.total_revenue}")
-            return next_state, 0, over, {}
         # 资金不足
         if self.total_revenue < 0.1:
             over = True
@@ -129,16 +122,25 @@ class MyWrapper(gym.Wrapper):
             reward = self.shortPosition(action)
 
         self.data_index += 1
-        return next_state, reward, over, {}
+        # 是否已结束-超过限制并且没有持仓 or 超过总数目
+        if (
+            self.data_index > self.ending_point and self.PS == 0
+        ) or self.data_index > self.total_steps - 10:
+            over = True
+            # print(f"end:步数已达到\t{self.total_revenue}")
+            return next_state, reward, over, {}
+        else:
+            return next_state, reward, over, {}
 
     # 未持仓状态
     def noPosition(self, action) -> float:
         next_increase = self.next_state["涨幅"] / 100
+        abs_next_increase = abs(next_increase)
         if action == 0:
-            if abs(next_increase) > 0.005:
-                return -0.01
+            if abs_next_increase > 0.01:
+                return -abs_next_increase * 10
             else:
-                return 0.005
+                return 0.05
         elif action == 1:
             self.PS = 1
             self.UG = next_increase - 0.0005
@@ -199,5 +201,5 @@ if __name__ == "__main__":
     while not over:
         action = env.random_action()
         state, reward, over, _ = env.step(action)
-        print(f"reward: {reward}")
+        print(f"reward: {reward}\tzf: {state[-3]}")
     print(f"total_revenue: {env.total_revenue}")
