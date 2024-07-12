@@ -43,8 +43,8 @@ class Player:
             action = (
                 self.model(torch.FloatTensor(state).to(self.device)).argmax().item()
             )
-            # 随机动作概率为0.1
-            if random.random() < 0.1:
+            # 随机动作概率为0.05
+            if random.random() < 0.05:
                 action = self.env.random_action()
 
             next_state, reward, over, _ = self.env.step(action)
