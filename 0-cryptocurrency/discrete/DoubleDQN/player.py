@@ -9,9 +9,10 @@ from model import DQNModel
 
 
 class Player:
-    def __init__(self, model: nn.Sequential):
+    def __init__(self, model: nn.Sequential, is_train=True):
         self.env = MyENV()
         self.model = model
+        self.is_train = is_train
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_dict = {0: "hlod", 1: "O L", 2: "O S", 3: "C L", 4: "C S"}
 
@@ -46,7 +47,7 @@ class Player:
                 .item()
             )
             # 随机动作概率为0.05
-            if random.random() < 0.05:
+            if self.is_train and random.random() < 0.05:
                 action = self.env.random_action()
 
             next_state, reward, over, _ = self.env.step(action)

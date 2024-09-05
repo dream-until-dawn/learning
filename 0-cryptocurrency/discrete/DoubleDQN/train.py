@@ -91,7 +91,7 @@ if __name__ == "__main__":
     else:
         dqnModel = DQNModel(mode="eval")
         dqnModel.loadModel()
-        player = Player(dqnModel.model)
+        player = Player(dqnModel.model, False)
 
         dqnLearning = DQNLearning(dqnModel.model, dqnModel.model_delay, player, 10)
         dqnLearning.train()

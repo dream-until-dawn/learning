@@ -136,10 +136,11 @@ class MyENV(gym.Wrapper):
             reward = self.shortPosition(action)
 
         self.data_index += 1
-        # 是否已结束-超过限制并且没有持仓 or 超过总数目
+        # 是否已结束-超过限制 or 超过总数目
         if (
-            self.data_index > self.ending_point and self.PS == 0
-        ) or self.data_index > self.total_steps - 10:
+            self.data_index > self.ending_point
+            or self.data_index > self.total_steps - 4
+        ):
             over = True
             # print(f"end:步数已达到\t{self.total_revenue}")
             return next_state, reward, over, {}
