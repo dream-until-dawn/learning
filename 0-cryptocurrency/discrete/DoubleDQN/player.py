@@ -4,13 +4,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from env import MyWrapper
+from env import MyENV
 from model import DQNModel
 
 
 class Player:
     def __init__(self, model: nn.Sequential):
-        self.env = MyWrapper()
+        self.env = MyENV()
         self.model = model
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.action_dict = {0: "hlod", 1: "O L", 2: "O S", 3: "C L", 4: "C S"}
@@ -41,17 +41,19 @@ class Player:
         over = False
         while not over:
             action = (
-                self.model(torch.FloatTensor(state).to(self.device)).argmax().item()
+                self.model(torch.FloatTensor(state.reshape(-1)).to(self.device))
+                .argmax()
+                .item()
             )
             # 随机动作概率为0.05
             if random.random() < 0.05:
                 action = self.env.random_action()
 
             next_state, reward, over, _ = self.env.step(action)
-            record_state.append(state)
+            record_state.append(state.reshape(-1))
             record_action.append(action)
             record_reward.append(reward)
-            record_next_state.append(next_state)
+            record_next_state.append(next_state.reshape(-1))
             record_over.append(over)
 
             reward_sum += reward

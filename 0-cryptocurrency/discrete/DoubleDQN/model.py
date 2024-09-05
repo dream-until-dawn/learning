@@ -6,7 +6,6 @@ import config
 
 
 class DQNModel:
-
     def __init__(self, mode="train"):
         self.modelName = config.modelName
         self.model_dir = config.model_dir

@@ -15,6 +15,7 @@ class DQNLearning:
         model: nn.Sequential,
         model_delay: nn.Sequential,
         player: Player,
+        count: int = 10000,
     ):
         self.player = player
         self.model = model
@@ -23,13 +24,14 @@ class DQNLearning:
         self.writer = SummaryWriter(
             log_dir=f"{config.log_dir}/{time.strftime('%Y-%m-%d-%H-%M')}"
         )
+        self.count = count
 
     def train(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-4)
         loss_fn = torch.nn.MSELoss()
         revenue_list = []
         # 共更新N轮数据
-        for epoch in range(10000):
+        for epoch in range(self.count):
             # 更新模型参数
             self.player.update_model(self.model)
             # 采样数据
@@ -41,7 +43,7 @@ class DQNLearning:
                 record_over,
                 reward_sum,
             ) = player.play()
-            print(f"第{epoch:4d}\t轮,总奖励为\t{reward_sum:.4f}")
+            print(f"第{epoch+1:4d}\t轮,总奖励为\t{reward_sum:.4f}")
             self.writer.add_scalar("tarin/reward sum", reward_sum, epoch)  # 记录
             self.writer.add_scalar(
                 "tarin/total revenue", self.player.env.total_revenue, epoch
@@ -89,6 +91,7 @@ if __name__ == "__main__":
     else:
         dqnModel = DQNModel(mode="eval")
         dqnModel.loadModel()
-
         player = Player(dqnModel.model)
-        player.play(show=True)
+
+        dqnLearning = DQNLearning(dqnModel.model, dqnModel.model_delay, player, 10)
+        dqnLearning.train()
