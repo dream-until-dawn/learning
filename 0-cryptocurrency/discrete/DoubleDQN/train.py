@@ -43,7 +43,7 @@ class DQNLearning:
                 record_over,
                 reward_sum,
             ) = player.play()
-            print(f"第{epoch+1:4d}\t轮,总奖励为\t{reward_sum:.4f}")
+            print(f"第{epoch+1:4d}\t轮,总奖励为\t{reward_sum:.4f},未持仓次数\t{self.player.env.no_positions}")
             self.writer.add_scalar("tarin/reward sum", reward_sum, epoch)  # 记录
             self.writer.add_scalar(
                 "tarin/total revenue", self.player.env.total_revenue, epoch
@@ -80,7 +80,7 @@ class DQNLearning:
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         dqnModel = DQNModel()
         dqnModel.loadModel()
         player = Player(dqnModel.model)

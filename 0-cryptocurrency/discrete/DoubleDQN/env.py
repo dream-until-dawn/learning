@@ -41,6 +41,7 @@ class MyENV(gym.Wrapper):
         self.UG = 0  # 未实现收益
         self.total_revenue = 1  # 总奖励
         self.max_total_revenue = 1  # 最大总奖励
+        self.no_positions = 0  # 未持仓次数
         self.print_head = True  # 打印头部信息
 
     @property  # 当前状态
@@ -113,6 +114,7 @@ class MyENV(gym.Wrapper):
         self.UG = 0
         self.total_revenue = 1
         self.max_total_revenue = 1
+        self.no_positions = 0
         self.print_head = True  # 打印头部信息
         return self.get_current_state()
 
@@ -138,8 +140,8 @@ class MyENV(gym.Wrapper):
         self.data_index += 1
         # 是否已结束-超过限制 or 超过总数目
         if (
-            self.data_index > self.ending_point
-            or self.data_index > self.total_steps - 4
+            self.data_index >= self.ending_point
+            or self.data_index >= self.total_steps - 4
         ):
             over = True
             # print(f"end:步数已达到\t{self.total_revenue}")
@@ -150,12 +152,13 @@ class MyENV(gym.Wrapper):
     # 未持仓状态
     def noPosition(self, action) -> float:
         next_increase = self.next_increase
-        abs_next_increase = abs(next_increase)
+        # abs_next_increase = abs(next_increase)
         if action == 0:
-            if abs_next_increase > 0.01:
-                return -abs_next_increase * 10
-            else:
-                return 0.05
+            # if abs_next_increase > 0.01:
+            #     return -abs_next_increase * 10
+            # else:
+            self.no_positions += 1
+            return -5
         elif action == 1:
             self.PS = 1
             self.UG = next_increase - 0.0005
